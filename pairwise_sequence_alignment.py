@@ -1,17 +1,31 @@
 import logging
+import argparse
 
-match_score = 5
-mis_match_penalty = -4
-gap_opening = -10
-gap_extend = -5
 
-# match_score = 1
-# mis_match_penalty = -1
-# gap_opening = -2
-# gap_extend = -2
+def parse(fname):
+    with open(fname) as fp:
+        lines = fp.readlines()
+
+    return lines[0].rstrip(), lines[1]
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description='Pairwise sequence alignment')
+
+    parser.add_argument('-i', '--input', dest='filename', type=str, help='Input filename', default="./sequences.txt")    
+    parser.add_argument('-a', '--algorithm', dest='algorithm', type=str, help='Algorithm ("global" or "local")', default="global")
+    
+    parser.add_argument('-m', '--match', dest='match_score', type=int, help='Match score', default=5)
+    parser.add_argument('-p', '--miss', dest='miss_penalty', type=int, help='Miss match penalty', default=-4)
+    parser.add_argument('-o', '--gap_opening', dest='gap_opening', type=int, help='Gap opening penalty', default=-10)
+    parser.add_argument('-e', '--gap_extension', dest='gap_extension', type=int, help='Gap extension penalty', default=-5)
+
+    args = parser.parse_args()
+
+    return args
+
 
 def init_matrix(rows, cols, algorithm='global'):
-    # 5, 6
     mat = [[0]*cols for row in range(rows)]
     gap_mat = [[0]*cols for row in range(rows)]
     gap_mat[1][0] = 1
@@ -34,21 +48,19 @@ def init_matrix(rows, cols, algorithm='global'):
     else:
         print("Please enter a valid algorithm... ('global' or 'local')")
   
-    logging.info('Matrix initialized...')
-    # print_matrix(mat)
-    # print_matrix(gap_mat)
+    logging.info('Matrix initialized...\n')
 
     return mat, gap_mat
 
 
 def print_matrix(matrix):
-    logging.info('Matrix printing...')
+    logging.info('Matrix printing...\n')
     for row in matrix:
         print(''.join(['{0:>{w}}'.format(item, w=5) for item in row]), end='\n\n')
 
 
 def is_match(char_a, char_b):
-    return match_score if char_a == char_b else mis_match_penalty
+    return match_score if char_a == char_b else miss_match_penalty
 
 
 def gap_penalty(gap_matrix, row_idx, col_idx):
@@ -65,18 +77,15 @@ def global_alignment(M, gap_matrix, s1, s2, rows, cols):
             options = [diagonal, vgap, hgap]
             index_max = options.index(max(options))
 
-            if max(options) == M[i - 1][j] + gap_penalty(gap_matrix, i - 1, j) or max(options) == M[i][j - 1] + gap_penalty(gap_matrix, i, j - 1):
+            if options[index_max] == vgap or options[index_max] == hgap:
                 gap_matrix[i][j] = 1
 
             M[i][j] = options[index_max]
             
-
-    # print_matrix(gap_matrix)
-
     i, j = rows-1, cols-1
     aligned_s1, aligned_s2, mid = (' ')*3
 
-    while i>0 and j>0:
+    while i > 0 and j > 0:
         diagonal = M[i][j] - is_match(s1[j-1], s2[i-1])
         vgap = M[i][j] - gap_penalty(gap_matrix, i-1, j)
         hgap = M[i][j] - gap_penalty(gap_matrix, i, j-1)
@@ -100,14 +109,29 @@ def global_alignment(M, gap_matrix, s1, s2, rows, cols):
             aligned_s2 += '-'
             mid += ' '
             j = j - 1
+           
+    while i > 0:
+        aligned_s1 += s1[i-1]
+        aligned_s2 += '-'
+        mid += ' '
+        i = i -1
+    
+    while j > 0:
+        aligned_s1 += '-'
+        aligned_s2 += s2[j-1]
+        mid += ' '
+        j = j -1
 
-    print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1])
+    logging.info('Sequence alignment printing...\n')
+    print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
+
+    match_hit = mid.count('|')
+    print("Percent identity:", (match_hit*100) / len(mid))
 
     return M, M[rows-1][cols-1]
 
 
 def local_alignment(M, gap_matrix, s1, s2, rows, cols):
-
     max_score = 0
     optimal_point = (0, 0)
 
@@ -128,14 +152,11 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
             if M[i][j] > max_score:
                 max_score = M[i][j]
                 optimal_point = (i, j)
-    
-    # print_matrix(gap_matrix)
-    # print_matrix(M)
 
     i, j = optimal_point[0], optimal_point[1]
     aligned_s1, aligned_s2, mid = (' ')*3
 
-    while i>0 and j>0:
+    while i > 0 and j > 0:
         diagonal = M[i][j] - is_match(s1[j-1], s2[i-1])
         vgap = M[i][j] - gap_penalty(gap_matrix, i-1, j)
         hgap = M[i][j] - gap_penalty(gap_matrix, i, j-1)
@@ -161,8 +182,27 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
             j = j - 1
         elif M[i][j] == 0:
             break
+            
+    terminal_gap_count = 0
+    while i > 0:
+        aligned_s1 += s1[i-1]
+        aligned_s2 += '-'
+        terminal_gap_count += 1
+        mid += ' '
+        i = i - 1
+    
+    while j > 0:
+        aligned_s1 += '-'
+        aligned_s2 += s2[j-1]
+        terminal_gap_count += 1
+        mid += ' '
+        j = j - 1
+    
+    logging.info('Sequence alignment printing...\n')
+    print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
 
-    print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1])
+    match_hit = mid.count('|')
+    print("Percent identity:", (match_hit*100) / (len(mid)-terminal_gap_count))
     
     return M, max_score
 
@@ -172,17 +212,30 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    sequence_a = 'ACTACTAGATTACTGACGGATAAGGTACTTTAGAGGCTTGCAACCA'
-    sequence_b = 'ACTACTCACGGATCAGGTACTTTAGAGGCA'
-    rows, cols = len(sequence_b)+1, len(sequence_a)+1
+    args = get_args()
 
+    if args.filename:
+        filename = args.filename
+        sequence_a, sequence_b = parse(filename)
 
-    D, gap_matrix = init_matrix(rows, cols, algorithm='local')
-    D, score = local_alignment(D, gap_matrix, sequence_a, sequence_b, rows, cols)
-    
-    # print_matrix(gap_matrix)
-    # print_matrix(D)
+        rows, cols = len(sequence_b)+1, len(sequence_a)+1
 
-    print(score)
+        match_score = args.match_score
+        miss_match_penalty = args.miss_penalty
+        gap_opening = args.gap_opening
+        gap_extend = args.gap_extension
 
-    
+        print("Filename\t:{}\nAlgorithm\t:{}\nMatch score\t:{}\nMiss match\t:{}\nGap opening\t:{}\nGap Extension\t:{}\n".format(
+                filename, args.algorithm, match_score, miss_match_penalty, gap_opening, gap_extend))
+
+        if args.algorithm == 'global':
+            D, gap_matrix = init_matrix(rows, cols, algorithm=args.algorithm)
+            D, score = global_alignment(D, gap_matrix, sequence_a, sequence_b, rows, cols)
+            print("Total Alignment Score:", score)
+        elif args.algorithm == 'local':
+            D, gap_matrix = init_matrix(rows, cols, algorithm=args.algorithm)
+            D, score = local_alignment(D, gap_matrix, sequence_a, sequence_b, rows, cols)
+            print("Total Alignment Score:", score)
+        else: 
+            print("Please enter a valid algorithm... ('global' or 'local')")
+        
