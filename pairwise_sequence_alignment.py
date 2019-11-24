@@ -110,17 +110,17 @@ def global_alignment(M, gap_matrix, s1, s2, rows, cols):
             mid += ' '
             j = j - 1
            
-    while i > 0:
-        aligned_s1 += s1[i-1]
+    while j > 0:
+        aligned_s1 += s1[j-1]
         aligned_s2 += '-'
         mid += ' '
-        i = i -1
-    
-    while j > 0:
-        aligned_s1 += '-'
-        aligned_s2 += s2[j-1]
-        mid += ' '
         j = j -1
+    
+    while i > 0:
+        aligned_s1 += '-'
+        aligned_s2 += s2[i-1]
+        mid += ' '
+        i = i - 1
 
     logging.info('Sequence alignment printing...\n')
     print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
@@ -184,19 +184,19 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
             break
             
     terminal_gap_count = 0
-    while i > 0:
-        aligned_s1 += s1[i-1]
+    while j > 0:
+        aligned_s1 += s1[j-1]
         aligned_s2 += '-'
         terminal_gap_count += 1
         mid += ' '
-        i = i - 1
+        j = j -1
     
-    while j > 0:
+    while i > 0:
         aligned_s1 += '-'
-        aligned_s2 += s2[j-1]
+        aligned_s2 += s2[i-1]
         terminal_gap_count += 1
         mid += ' '
-        j = j - 1
+        i = i - 1
     
     logging.info('Sequence alignment printing...\n')
     print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
