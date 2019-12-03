@@ -31,6 +31,7 @@ def init_matrix(rows, cols, algorithm='local'):
     gap_mat[1][0] = [0, set()]
     gap_mat[0][1] = [0, set()]
 
+    # fills the cells in the first row and first column according to the selected algorithm
     if algorithm == 'global':
         for i in range(1, rows):
             mat[i][0] = mat[i - 1][0] + gap_penalty(gap_mat, i - 1, 0, 'v')
@@ -64,6 +65,9 @@ def is_match(char_a, char_b):
 
 
 def gap_penalty(gap_matrix, row_idx, col_idx, gap_direction):
+    
+    # If the current cell is gap, returns gap extension penalty or
+    # gap opening penalty depending on whether the gap is horizontal or vertical.
     if gap_matrix[row_idx][col_idx][0] == 1:
         if gap_direction == 'v':
             if 'v' in gap_matrix[row_idx][col_idx][1]:
@@ -76,6 +80,8 @@ def gap_penalty(gap_matrix, row_idx, col_idx, gap_direction):
 
 
 def global_alignment(M, gap_matrix, s1, s2, rows, cols):
+    
+    # fills the score matrix
     for i in range(1, rows):
         for j in range(1, cols):
             diagonal = M[i - 1][j - 1] + is_match(s1[j - 1], s2[i - 1])
@@ -97,6 +103,7 @@ def global_alignment(M, gap_matrix, s1, s2, rows, cols):
     i, j = rows - 1, cols - 1
     aligned_s1, aligned_s2, mid = (' ') * 3
 
+    # backtracking
     while i > 0 and j > 0:
         diagonal = M[i][j] - is_match(s1[j - 1], s2[i - 1])
         vgap = M[i][j] - gap_penalty(gap_matrix, i - 1, j, 'v')
@@ -133,7 +140,8 @@ def global_alignment(M, gap_matrix, s1, s2, rows, cols):
         aligned_s2 += s2[i - 1]
         mid += ' '
         i = i - 1
-
+        
+    # shows the aligned arrays on the console
     logging.info('Sequence alignment printing...\n')
     print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
 
@@ -147,6 +155,7 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
     max_score = 0
     optimal_point = (0, 0)
 
+    # fills the score matrix
     for i in range(1, rows):
         for j in range(1, cols):
             diagonal = M[i - 1][j - 1] + is_match(s1[j - 1], s2[i - 1])
@@ -170,7 +179,8 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
 
     i, j = optimal_point[0], optimal_point[1]
     aligned_s1, aligned_s2, mid = (' ') * 3
-
+    
+    # backtracking
     while i > 0 and j > 0:
         diagonal = M[i][j] - is_match(s1[j - 1], s2[i - 1])
         vgap = M[i][j] - gap_penalty(gap_matrix, i - 1, j, 'v')
@@ -213,6 +223,7 @@ def local_alignment(M, gap_matrix, s1, s2, rows, cols):
         mid += ' '
         i = i - 1
 
+    # shows the aligned arrays on the console
     logging.info('Sequence alignment printing...\n')
     print(aligned_s1[::-1] + '\n' + mid[::-1] + '\n' + aligned_s2[::-1], "\n")
 
